@@ -662,54 +662,25 @@
 <!-- Firebase SDK -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getDatabase, ref, onValue, set, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-  window._fbModules = { initializeApp, getDatabase, ref, onValue, set, get };
+  import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCrMzLYPpkunvfFH26mzSI51TmuXMcIA-k",
+    authDomain: "sasoncostenolm.firebaseapp.com",
+    databaseURL: "https://sasoncostenolm-default-rtdb.firebaseio.com",
+    projectId: "sasoncostenolm",
+    storageBucket: "sasoncostenolm.firebasestorage.app",
+    messagingSenderId: "915624791749",
+    appId: "1:915624791749:web:eb06034c598a7989cfeaac"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  window._fbModules = { getDatabase, ref, onValue, set, db };
 </script>
 </head>
 <body>
 
-
-<!-- ===== SETUP SCREEN ===== -->
-<div id="setupScreen" style="display:none; position:fixed; inset:0; background:#000; z-index:9999; overflow-y:auto; padding:24px 16px;">
-  <div style="max-width:480px;margin:0 auto;">
-    <div style="text-align:center;margin-bottom:24px;">
-      <div style="font-size:3rem;margin-bottom:8px;">🔥</div>
-      <div style="font-family:'Playfair Display',serif;font-size:1.5rem;color:#F5C518;margin-bottom:6px;">Conectar en la Nube</div>
-      <div style="font-size:0.85rem;color:#888;line-height:1.5;">Para que todos vean los mismos datos en tiempo real, sigue estos pasos y pega tu configuración de Firebase.</div>
-    </div>
-
-    <div style="background:#0f0f0f;border:1px solid #222;border-radius:14px;padding:16px;margin-bottom:14px;">
-      <div style="color:#E8651A;font-weight:800;font-size:0.82rem;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;">📋 Pasos (5 minutos)</div>
-      <div class="setup-step"><span class="setup-num">1</span><div>Ve a <a href="https://console.firebase.google.com" target="_blank" style="color:#F5C518;font-weight:700;">console.firebase.google.com</a> e inicia sesión con Google</div></div>
-      <div class="setup-step"><span class="setup-num">2</span><div>Clic en <b style="color:white;">"Crear un proyecto"</b> → ponle un nombre (ej: sazon-costeno) → desactiva Google Analytics → <b style="color:white;">Crear</b></div></div>
-      <div class="setup-step"><span class="setup-num">3</span><div>En el panel del proyecto, clic en el ícono <b style="color:white;">&lt;/&gt; (Web)</b> → Registra la app → ponle un nombre → clic en <b style="color:white;">"Registrar app"</b></div></div>
-      <div class="setup-step"><span class="setup-num">4</span><div>Verás un bloque <code style="color:#F5C518;font-size:0.8rem;">firebaseConfig = { ... }</code> — <b style="color:white;">copia ese objeto completo</b></div></div>
-      <div class="setup-step"><span class="setup-num">5</span><div>En el menú izquierdo ve a <b style="color:white;">Compilación → Realtime Database → Crear base de datos</b> → elige la región → modo <b style="color:white;">"Empezar en modo de prueba"</b> → Listo</div></div>
-      <div class="setup-step"><span class="setup-num">6</span><div>Pega tu <code style="color:#F5C518;font-size:0.8rem;">firebaseConfig</code> aquí abajo 👇</div></div>
-    </div>
-
-    <div style="background:#0f0f0f;border:1px solid #222;border-radius:14px;padding:16px;margin-bottom:14px;">
-      <label style="display:block;font-size:0.78rem;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Pega tu firebaseConfig aquí</label>
-      <textarea id="fbConfigInput" style="width:100%;height:160px;background:#080808;border:1.5px solid #333;border-radius:8px;padding:10px;color:#F5C518;font-family:monospace;font-size:0.78rem;resize:vertical;" placeholder='const firebaseConfig = {
-  apiKey: "AIzaSy...",
-  authDomain: "mi-app.firebaseapp.com",
-  databaseURL: "https://mi-app-default-rtdb.firebaseio.com",
-  projectId: "mi-app",
-  storageBucket: "mi-app.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "1:123:web:abc123"
-};'></textarea>
-      <div id="fbConfigError" style="color:#C0392B;font-size:0.78rem;margin-top:6px;display:none;"></div>
-    </div>
-
-    <button onclick="conectarFirebase()" style="width:100%;padding:16px;background:linear-gradient(135deg,#E8651A,#F5913A);color:white;border:none;border-radius:12px;font-family:'Nunito',sans-serif;font-weight:800;font-size:1rem;cursor:pointer;margin-bottom:10px;">
-      🚀 Conectar y sincronizar
-    </button>
-    <button onclick="usarLocalStorage()" style="width:100%;padding:12px;background:transparent;color:#555;border:1px solid #222;border-radius:12px;font-family:'Nunito',sans-serif;font-weight:700;font-size:0.85rem;cursor:pointer;">
-      Usar sin nube (solo este dispositivo)
-    </button>
-  </div>
-</div>
 
 <!-- Barra de estado de conexión -->
 <div id="syncBar" style="display:none;background:#0d1f17;border-bottom:1px solid #1a3a2a;padding:6px 16px;text-align:center;font-size:0.72rem;font-weight:700;color:#5fcf8a;letter-spacing:0.5px;">
@@ -987,8 +958,7 @@ let cantidades = {};
 // Datos persistidos
 let datos = {};
 // Firebase refs
-let _db = null, _dataRef = null;
-let _modoNube = false;
+let _dataRef = null;
 
 function cargarDatos() {
   try { return JSON.parse(localStorage.getItem('sazonCosteno') || '{}'); }
@@ -997,116 +967,13 @@ function cargarDatos() {
 
 function guardarDatos() {
   localStorage.setItem('sazonCosteno', JSON.stringify(datos));
-  if (_modoNube && _dataRef) {
+  if (_dataRef) {
     const { set } = window._fbModules;
     set(_dataRef, datos).catch(e => console.warn('Firebase write error:', e));
   }
 }
 
-// ============================================================
-//  FIREBASE / CLOUD SETUP
-// ============================================================
-function mostrarSetup() {
-  document.getElementById('setupScreen').style.display = 'block';
-}
-function ocultarSetup() {
-  document.getElementById('setupScreen').style.display = 'none';
-}
-
-function usarLocalStorage() {
-  localStorage.setItem('scModo', 'local');
-  datos = cargarDatos();
-  ocultarSetup();
-  initUI();
-}
-
-async function conectarFirebase() {
-  const input = document.getElementById('fbConfigInput').value.trim();
-  const errEl = document.getElementById('fbConfigError');
-  errEl.style.display = 'none';
-
-  // Extract the config object from the pasted text
-  let config;
-  try {
-    // Try to parse just the object (strip "const firebaseConfig = " if present)
-    let jsonStr = input
-      .replace(/const\s+\w+\s*=\s*/, '')
-      .replace(/;?\s*$/, '')
-      .trim();
-    // Replace JS keys without quotes to JSON keys
-    jsonStr = jsonStr.replace(/([{,]\s*)(\w+)\s*:/g, '$1"$2":');
-    config = JSON.parse(jsonStr);
-  } catch(e) {
-    errEl.textContent = '⚠️ No se pudo leer la configuración. Asegúrate de copiar todo el objeto { ... }';
-    errEl.style.display = 'block';
-    return;
-  }
-
-  if (!config.databaseURL) {
-    errEl.textContent = '⚠️ Falta el campo "databaseURL". Asegúrate de haber creado el Realtime Database en Firebase.';
-    errEl.style.display = 'block';
-    return;
-  }
-
-  try {
-    const { initializeApp, getDatabase, ref, onValue, set } = window._fbModules;
-    const app = initializeApp(config);
-    _db = getDatabase(app);
-    _dataRef = ref(_db, 'sazonCosteno');
-    _modoNube = true;
-
-    // Save config for next visit
-    localStorage.setItem('scModo', 'cloud');
-    localStorage.setItem('scFbConfig', JSON.stringify(config));
-
-    ocultarSetup();
-    document.getElementById('syncBar').style.display = 'block';
-
-    // Real-time listener — updates datos on any change from any device
-    onValue(_dataRef, (snapshot) => {
-      const val = snapshot.val();
-      if (val) {
-        datos = val;
-        localStorage.setItem('sazonCosteno', JSON.stringify(datos));
-      } else {
-        datos = cargarDatos();
-      }
-      refreshAllViews();
-    });
-
-  } catch(e) {
-    errEl.textContent = '⚠️ Error al conectar: ' + e.message;
-    errEl.style.display = 'block';
-  }
-}
-
-async function tryReconnectCloud() {
-  const saved = localStorage.getItem('scFbConfig');
-  if (!saved) return false;
-  try {
-    const config = JSON.parse(saved);
-    const { initializeApp, getDatabase, ref, onValue } = window._fbModules;
-    const app = initializeApp(config);
-    _db = getDatabase(app);
-    _dataRef = ref(_db, 'sazonCosteno');
-    _modoNube = true;
-    document.getElementById('syncBar').style.display = 'block';
-    onValue(_dataRef, (snapshot) => {
-      const val = snapshot.val();
-      if (val) {
-        datos = val;
-        localStorage.setItem('sazonCosteno', JSON.stringify(datos));
-      } else {
-        datos = cargarDatos();
-      }
-      refreshAllViews();
-    });
-    return true;
-  } catch(e) {
-    console.warn('Auto-reconnect failed:', e);
-    return false;
-  }
-}
+// Firebase auto-conectado al cargar
 
 function refreshAllViews() {
   renderPlatos(); renderBebidas(); renderAdicionales();
@@ -1127,35 +994,49 @@ function getDatosDia(dia) {
 // ============================================================
 //  INIT
 // ============================================================
-window.onload = async function() {
+window.onload = function() {
   initDark();
   document.getElementById('fechaHoy').textContent = new Date().toLocaleDateString('es-EC',{weekday:'long',day:'numeric',month:'long'});
 
-  const modo = localStorage.getItem('scModo');
+  // Wait for Firebase module to load then connect
+  setTimeout(autoConectarFirebase, 400);
+};
 
-  if (modo === 'cloud') {
-    // Wait a tick for firebase modules to load
-    setTimeout(async () => {
-      const ok = await tryReconnectCloud();
-      if (!ok) mostrarSetup();
-      else initUI();
-    }, 300);
-  } else if (modo === 'local') {
+function autoConectarFirebase() {
+  try {
+    const { db, ref, onValue } = window._fbModules;
+    _dataRef = ref(db, 'sazonCosteno');
+
+    // Show sync bar
+    document.getElementById('syncBar').style.display = 'block';
+    document.getElementById('syncBar').innerHTML =
+      '<span class="cloud-dot"></span>CONECTANDO A LA NUBE...';
+
+    // Real-time listener — syncs data across all devices instantly
+    onValue(_dataRef, (snapshot) => {
+      const val = snapshot.val();
+      datos = val && typeof val === 'object' ? val : cargarDatos();
+      localStorage.setItem('sazonCosteno', JSON.stringify(datos));
+      document.getElementById('syncBar').innerHTML =
+        '<span class="cloud-dot"></span>☁️ EN VIVO — TODO EL EQUIPO VE LO MISMO EN TIEMPO REAL';
+      document.getElementById('syncBar').style.background = '#0d1f17';
+      document.getElementById('syncBar').style.color = '#5fcf8a';
+      refreshAllViews();
+    }, (error) => {
+      document.getElementById('syncBar').innerHTML = '⚠️ Sin conexión — guardando localmente';
+      document.getElementById('syncBar').style.background = '#1f0d0d';
+      document.getElementById('syncBar').style.color = '#e87070';
+      datos = cargarDatos();
+      refreshAllViews();
+    });
+  } catch(e) {
+    console.warn('Firebase init error:', e);
     datos = cargarDatos();
-    initUI();
-  } else {
-    // First time: show setup
-    mostrarSetup();
+    refreshAllViews();
   }
 };
 
-function initUI() {
-  renderPlatos();
-  renderBebidas();
-  renderAdicionales();
-  updateTotalVenta();
-  actualizarResumen();
-}
+
 
 function cambiarDia() {
   cantidades = {};
