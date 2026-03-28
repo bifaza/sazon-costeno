@@ -673,16 +673,12 @@
     appId: "1:915624791749:web:eb06034c598a7989cfeaac"
   };
   firebase.initializeApp(firebaseConfig);
-  const _firebaseDB = firebase.database();
+  window._firebaseDB = firebase.database();
 </script>
 </head>
 <body>
 
 
-<!-- Barra de estado de conexión -->
-<div id="syncBar" style="display:none;background:#0d1f17;border-bottom:1px solid #1a3a2a;padding:6px 16px;text-align:center;font-size:0.72rem;font-weight:700;color:#5fcf8a;letter-spacing:0.5px;">
-  ☁️ SINCRONIZADO EN LA NUBE — LOS CAMBIOS SE COMPARTEN EN TIEMPO REAL
-</div>
 
 <header>
   <div style="display:flex;align-items:center;gap:8px;">
@@ -964,8 +960,12 @@ function cargarDatos() {
 
 function guardarDatos() {
   localStorage.setItem('sazonCosteno', JSON.stringify(datos));
+  // Write to Firebase — this triggers the .on('value') listener on ALL devices
   if (_dataRef) {
     _dataRef.set(datos).catch(e => console.warn('Firebase write error:', e));
+  } else if (window._firebaseDB) {
+    window._firebaseDB.ref('sazonCosteno').set(datos)
+      .catch(e => console.warn('Firebase write error:', e));
   }
 }
 
@@ -999,42 +999,34 @@ window.onload = function() {
 };
 
 function autoConectarFirebase() {
+  // Retry up to 10 times if Firebase not ready yet
+  if (!window._firebaseDB) {
+    console.log('Esperando Firebase...');
+    setTimeout(autoConectarFirebase, 300);
+    return;
+  }
   try {
-    _dataRef = _firebaseDB.ref('sazonCosteno');
+    _dataRef = window._firebaseDB.ref('sazonCosteno');
 
-    const syncBar = document.getElementById('syncBar');
-    syncBar.style.display = 'block';
-    syncBar.innerHTML = '<span class="cloud-dot"></span> CONECTANDO A LA NUBE...';
-
-    // Real-time listener — fires instantly on any change from any device
+    // .on('value') escucha en TIEMPO REAL — cualquier cambio en cualquier
+    // dispositivo se dispara aquí instantáneamente
     _dataRef.on('value', (snapshot) => {
       const val = snapshot.val();
-      if (val && typeof val === 'object') {
-        datos = val;
-      } else {
-        datos = cargarDatos();
-      }
+      datos = (val && typeof val === 'object') ? val : (cargarDatos() || {});
       localStorage.setItem('sazonCosteno', JSON.stringify(datos));
-      syncBar.style.display = 'block';
-      syncBar.style.background = '#0d1f17';
-      syncBar.style.color = '#5fcf8a';
-      syncBar.innerHTML = '<span class="cloud-dot"></span> ☁️ EN VIVO — TODO EL EQUIPO VE LO MISMO EN TIEMPO REAL';
       refreshAllViews();
     }, (error) => {
-      console.warn('Firebase listener error:', error);
-      syncBar.style.background = '#1f0d0d';
-      syncBar.style.color = '#e87070';
-      syncBar.innerHTML = '⚠️ Sin conexión a la nube — guardando localmente';
-      datos = cargarDatos();
+      console.warn('Firebase error:', error);
+      datos = cargarDatos() || {};
       refreshAllViews();
     });
 
   } catch(e) {
     console.warn('Firebase init error:', e);
-    datos = cargarDatos();
+    datos = cargarDatos() || {};
     refreshAllViews();
   }
-};
+}
 
 
 
